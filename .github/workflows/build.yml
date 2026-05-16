@@ -31,13 +31,25 @@ jobs:
           curl -sL "https://cdn.plyr.io/3.4.6/plyr.js" -o plyr.js
           curl -sL "https://cdn.plyr.io/3.4.6/plyr.css" -o plyr.css
           python3 - <<'EOF'
-          import re, pathlib
-          html = pathlib.Path("app/src/main/assets/player.html").read_text()
-          css = pathlib.Path("plyr.css").read_text()
-          js = pathlib.Path("plyr.js").read_text()
-          html = re.sub(r'<link[^>]*plyr.css[^>]*>', f'<style>{css}</style>', html)
-          html = re.sub(r'<script[^>]*plyr.js[^>]*></script>', f'<script>{js}</script>', html)
-          pathlib.Path("app/src/main/assets/player.html").write_text(html)
+          import pathlib
+          # Path to your asset file
+          html_path = pathlib.Path("app/src/main/assets/player.html")
+          html_content = html_path.read_text()
+          
+          # Read JS and CSS
+          js_content = pathlib.Path("plyr.js").read_text()
+          css_content = pathlib.Path("plyr.css").read_text()
+          
+          # Search markers (Ensure these match exactly what's in your player.html)
+          css_marker = '<link href="https://cdn.plyr.io/3.4.6/plyr.css" rel="stylesheet">'
+          js_marker = '<script src="https://cdn.plyr.io/3.4.6/plyr.js"></script>'
+          
+          # Use string replace (Literal replacement, no regex "bad escape" errors)
+          new_html = html_content.replace(css_marker, f"<style>{css_content}</style>")
+          new_html = new_html.replace(js_marker, f"<script>{js_content}</script>")
+          
+          html_path.write_text(new_html)
+          print("✅ Plyr assets inlined successfully via literal replacement")
           EOF
 
       - name: Build Debug APK
@@ -46,8 +58,11 @@ jobs:
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v${{ github.run_number }}
+          tag_name: build-${{ github.run_number }}
           name: "VideoPlyr Build #${{ github.run_number }}"
+          body: |
+            ## 📥 VideoPlyr APK Build
+            Download the `app-debug.apk` below.
           files: app/build/outputs/apk/debug/app-debug.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
