@@ -1,13 +1,11 @@
 package io.videoplyr.app
 
 import android.content.Intent
-import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.util.Base64
 import android.view.View
 import android.view.WindowManager
-import android.view.ViewGroup.LayoutParams.MATCH_PARENT
 import android.webkit.*
 import android.widget.FrameLayout
 import androidx.appcompat.app.AppCompatActivity
@@ -16,29 +14,24 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 
 class MainActivity : AppCompatActivity() {
-
     private lateinit var webView: WebView
-    private var customView: View? = null
-    private var customViewCallback: WebChromeClient.CustomViewCallback? = null
     private var isPageLoaded = false
     private var pendingJs: String? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // ✅ حل مشكلة السواد الجانبي: السماح للمحتوى بالظهور تحت النوتش
+        // ملء الشاشة بالكامل خلف النوتش
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
             window.attributes.layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
         }
-
         WindowCompat.setDecorFitsSystemWindows(window, false)
-        val controller = WindowInsetsControllerCompat(window, window.decorView)
-        controller.hide(WindowInsetsCompat.Type.systemBars())
-        controller.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+        WindowInsetsControllerCompat(window, window.decorView).apply {
+            hide(WindowInsetsCompat.Type.systemBars())
+            systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+        }
 
         webView = WebView(this)
-        // ✅ التأكد من أن الـ WebView يملأ الشاشة تماماً
-        webView.layoutParams = FrameLayout.LayoutParams(MATCH_PARENT, MATCH_PARENT)
         setContentView(webView)
 
         webView.settings.apply {
@@ -48,18 +41,14 @@ class MainActivity : AppCompatActivity() {
             allowUniversalAccessFromFileURLs = true
             mediaPlaybackRequiresUserGesture = false
             mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
-            userAgentString = "Mozilla/5.0 (Linux; Android 13) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Mobile Safari/537.36"
+            userAgentString = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Safari/537.36"
         }
 
         webView.addJavascriptInterface(AndroidBridge(), "Android")
-        webView.webChromeClient = VideoWebChromeClient()
         webView.webViewClient = object : WebViewClient() {
             override fun onPageFinished(view: WebView?, url: String?) {
                 isPageLoaded = true
-                pendingJs?.let {
-                    webView.evaluateJavascript(it, null)
-                    pendingJs = null
-                }
+                pendingJs?.let { webView.evaluateJavascript(it, null); pendingJs = null }
             }
         }
 
@@ -75,11 +64,7 @@ class MainActivity : AppCompatActivity() {
     private fun handleIntent(intent: Intent?) {
         val uri = intent?.data ?: return
         val js = when (uri.host) {
-            "open" -> {
-                val url = uri.getQueryParameter("url") ?: return
-                val title = uri.getQueryParameter("title") ?: "Video"
-                "window.loadVideo('$url', '$title')"
-            }
+            "open" -> "window.loadVideo('${uri.getQueryParameter("url")}','${uri.getQueryParameter("title") ?: "Video"}')"
             "playlist" -> {
                 val data = uri.getQueryParameter("data") ?: return
                 val json = String(Base64.decode(data, Base64.URL_SAFE or Base64.NO_WRAP))
@@ -87,32 +72,15 @@ class MainActivity : AppCompatActivity() {
             }
             else -> null
         }
-
         if (js != null) {
-            if (isPageLoaded) webView.evaluateJavascript(js, null)
-            else pendingJs = js
-        }
-    }
-
-    inner class VideoWebChromeClient : WebChromeClient() {
-        override fun onShowCustomView(view: View, callback: CustomViewCallback) {
-            customView = view
-            customViewCallback = callback
-            val decor = window.decorView as FrameLayout
-            decor.addView(view, FrameLayout.LayoutParams(MATCH_PARENT, MATCH_PARENT))
-            webView.visibility = View.GONE
-        }
-        override fun onHideCustomView() {
-            val decor = window.decorView as FrameLayout
-            decor.removeView(customView)
-            customView = null
-            customViewCallback?.onCustomViewHidden()
-            webView.visibility = View.VISIBLE
+            if (isPageLoaded) webView.evaluateJavascript(js, null) else pendingJs = js
         }
     }
 
     inner class AndroidBridge {
-        @JavascriptInterface fun onVideoReady() {}
-        @JavascriptInterface fun onError(msg: String) {}
+        @JavascriptInterface
+        fun closeApp() {
+            finishAffinity() // إغلاق التطبيق بالكامل
+        }
     }
 }
