@@ -26,27 +26,34 @@ jobs:
           gradle wrapper --gradle-version 8.4 --distribution-type bin
           chmod +x gradlew
 
-      - name: Inline Plyr assets
+      - name: Inline Assets (Plyr & Hls.js)
         run: |
+          # تحميل المكتبات
           curl -sL "https://cdn.plyr.io/3.4.6/plyr.js" -o plyr.js
           curl -sL "https://cdn.plyr.io/3.4.6/plyr.css" -o plyr.css
+          curl -sL "https://cdn.jsdelivr.net/npm/hls.js@latest" -o hls.js
+          
           python3 - <<'EOF'
           import pathlib
+          
+          # مسار ملف الـ HTML
           html_path = pathlib.Path("app/src/main/assets/player.html")
           html_content = html_path.read_text()
           
-          js_content = pathlib.Path("plyr.js").read_text()
-          css_content = pathlib.Path("plyr.css").read_text()
+          # قراءة محتويات المكتبات
+          js_plyr = pathlib.Path("plyr.js").read_text()
+          css_plyr = pathlib.Path("plyr.css").read_text()
+          js_hls = pathlib.Path("hls.js").read_text()
           
-          css_marker = '<link href="https://cdn.plyr.io/3.4.6/plyr.css" rel="stylesheet">'
-          js_marker = '<script src="https://cdn.plyr.io/3.4.6/plyr.js"></script>'
+          # استبدال الروابط الخارجية بالأكواد الفعلية (Literal Replacement)
+          # نستخدم استبدال النصوص المباشر لتجنب مشاكل الـ Regex مع الرموز الخاصة
+          html_content = html_content.replace('<link href="https://cdn.plyr.io/3.4.6/plyr.css" rel="stylesheet">', f"<style>{css_plyr}</style>")
+          html_content = html_content.replace('<script src="https://cdn.plyr.io/3.4.6/plyr.js"></script>', f"<script>{js_plyr}</script>")
+          html_content = html_content.replace('<script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>', f"<script>{js_hls}</script>")
           
-          # استبدال مباشر للنصوص لتجنب أخطاء Regex
-          new_html = html_content.replace(css_marker, f"<style>{css_content}</style>")
-          new_html = new_html.replace(js_marker, f"<script>{js_content}</script>")
-          
-          html_path.write_text(new_html)
-          print("✅ Plyr assets inlined successfully")
+          # حفظ الملف المحدث
+          html_path.write_text(html_content)
+          print("✅ Plyr & Hls.js assets inlined successfully")
           EOF
 
       - name: Build Debug APK
@@ -59,7 +66,9 @@ jobs:
           name: "VideoPlyr Build #${{ github.run_number }}"
           body: |
             ## 📥 تم بناء التطبيق بنجاح
-            يمكنك تحميل ملف الـ APK من الرابط أدناه.
+            - دعم كامل لروابط m3u8 (HLS).
+            - تصميم احترافي بـ 13 زر تحكم.
+            - دعم قائمة التشغيل والعناوين.
           files: app/build/outputs/apk/debug/app-debug.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
