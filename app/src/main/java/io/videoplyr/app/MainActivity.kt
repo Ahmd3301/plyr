@@ -2,9 +2,11 @@ package io.videoplyr.app
 
 import android.content.Intent
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.util.Base64
 import android.view.View
+import android.view.WindowManager
 import android.view.ViewGroup.LayoutParams.MATCH_PARENT
 import android.webkit.*
 import android.widget.FrameLayout
@@ -24,15 +26,19 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // إعداد الشاشة الكاملة (تغطية النوتش وإخفاء أشرطة النظام)
-        WindowCompat.setDecorFitsSystemWindows(window, false)
-        WindowInsetsControllerCompat(window, window.decorView).apply {
-            hide(WindowInsetsCompat.Type.systemBars())
-            systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+        // ✅ حل مشكلة السواد الجانبي: السماح للمحتوى بالظهور تحت النوتش
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            window.attributes.layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
         }
 
-        // إنشاء الـ WebView برمجياً
+        WindowCompat.setDecorFitsSystemWindows(window, false)
+        val controller = WindowInsetsControllerCompat(window, window.decorView)
+        controller.hide(WindowInsetsCompat.Type.systemBars())
+        controller.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+
         webView = WebView(this)
+        // ✅ التأكد من أن الـ WebView يملأ الشاشة تماماً
+        webView.layoutParams = FrameLayout.LayoutParams(MATCH_PARENT, MATCH_PARENT)
         setContentView(webView)
 
         webView.settings.apply {
@@ -40,12 +46,8 @@ class MainActivity : AppCompatActivity() {
             domStorageEnabled = true
             allowFileAccessFromFileURLs = true
             allowUniversalAccessFromFileURLs = true
-            mediaPlaybackRequiresUserGesture = false // تشغيل تلقائي
+            mediaPlaybackRequiresUserGesture = false
             mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
-            cacheMode = WebSettings.LOAD_DEFAULT
-            useWideViewPort = true
-            loadWithOverviewMode = true
-            // تعيين User Agent حديث لتجنب حظر روابط m3u8
             userAgentString = "Mozilla/5.0 (Linux; Android 13) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Mobile Safari/537.36"
         }
 
@@ -92,15 +94,6 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    override fun onBackPressed() {
-        // إذا كان الفيديو في وضع ملء الشاشة الخاص بالـ WebView
-        if (customView != null) {
-            (webView.webChromeClient as VideoWebChromeClient).onHideCustomView()
-        } else {
-            super.onBackPressed()
-        }
-    }
-
     inner class VideoWebChromeClient : WebChromeClient() {
         override fun onShowCustomView(view: View, callback: CustomViewCallback) {
             customView = view
@@ -108,9 +101,7 @@ class MainActivity : AppCompatActivity() {
             val decor = window.decorView as FrameLayout
             decor.addView(view, FrameLayout.LayoutParams(MATCH_PARENT, MATCH_PARENT))
             webView.visibility = View.GONE
-            WindowInsetsControllerCompat(window, window.decorView).hide(WindowInsetsCompat.Type.systemBars())
         }
-
         override fun onHideCustomView() {
             val decor = window.decorView as FrameLayout
             decor.removeView(customView)
