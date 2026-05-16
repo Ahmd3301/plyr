@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>VideoPlyr</title>
+    <link href="https://cdn.plyr.io/3.4.6/plyr.css" rel="stylesheet">
+    <script src="https://cdn.plyr.io/3.4.6/plyr.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root { --plyr-color-main: rgba(255, 255, 255, 0.4) !important; }
+        body, html { width: 100%; height: 100%; background: #000; overflow: hidden; }
+        .video-player-container { width: 100%; height: 100%; position: relative; }
+        .plyr { width: 100%; height: 100%; position: absolute; background: #000; }
+        .plyr.mode-fill .plyr__video-wrapper video { object-fit: cover; }
+        .plyr.mode-contain .plyr__video-wrapper video { object-fit: contain; }
+        .plyr.mode-square .plyr__video-wrapper video { width: auto; height: 80%; margin: auto; }
+        
+        .plyr__title {
+            position: absolute; bottom: 64px; left: 20px; z-index: 12;
+            font-size: 15px; color: #fff; background: rgba(255, 255, 255, 0.12);
+            border-radius: 4px; padding: 6px 14px; backdrop-filter: blur(4px);
+            opacity: 0; visibility: hidden; transition: all 0.4s;
+        }
+        .plyr--controls-visible .plyr__title { opacity: 1; visibility: visible; }
+        
+        .plyr__playlist {
+            position: absolute; left: 20px; right: 20px; bottom: 110px; z-index: 20;
+            opacity: 0; visibility: hidden; transition: all 0.5s;
+        }
+        .playlist-open .plyr__playlist { opacity: 1; visibility: visible; }
+        .playlist-wrapper { display: flex; gap: 16px; overflow-x: auto; scrollbar-width: none; }
+        .playlist-item {
+            flex: 0 0 auto; width: 200px; height: 110px; color: #fff;
+            background: rgba(255, 255, 255, 0.12); border-radius: 4px;
+            display: flex; align-items: center; justify-content: center; cursor: pointer;
+        }
+        .playlist-item.active { background: rgba(255, 255, 255, 0.3); }
+        .plyr__control--resize::after { content: '⛶'; font-size: 19px; }
+    </style>
+</head>
+<body>
+    <div class="video-player-container">
+        <video id="player" playsinline controls autoplay poster="https://cdn.plyr.io/static/demo/View_From_A_Blue_Moon_Trailer-HD.jpg">
+            <source src="https://cdn.plyr.io/static/demo/View_From_A_Blue_Moon_Trailer-720p.mp4" type="video/mp4">
+        </video>
+    </div>
+
+    <script>
+        let player;
+        document.addEventListener('DOMContentLoaded', () => {
+            player = new Plyr('#player', {
+                controls: ['play', 'progress', 'current-time', 'mute', 'volume', 'captions', 'settings', 'fullscreen'],
+                settings: ['quality', 'speed']
+            });
+
+            const container = document.querySelector('.plyr');
+            const titleBox = document.createElement('div');
+            titleBox.className = 'plyr__title';
+            titleBox.innerHTML = 'Video player plyr.io 👍';
+            container.appendChild(titleBox);
+
+            const playlist = document.createElement('div');
+            playlist.className = 'plyr__playlist';
+            playlist.innerHTML = `<div class="playlist-wrapper">
+                <div class="playlist-item active" data-src="https://cdn.plyr.io/static/demo/View_From_A_Blue_Moon_Trailer-720p.mp4">Video #01</div>
+                <div class="playlist-item" data-src="https://cdn.plyr.io/static/demo/View_From_A_Blue_Moon_Trailer-1080p.mp4">Video #02</div>
+            </div>`;
+            container.appendChild(playlist);
+
+            titleBox.onclick = () => container.classList.toggle('playlist-open');
+
+            document.querySelectorAll('.playlist-item').forEach(item => {
+                item.onclick = () => {
+                    window.loadVideo(item.dataset.src, item.textContent);
+                    document.querySelectorAll('.playlist-item').forEach(i => i.classList.remove('active'));
+                    item.classList.add('active');
+                };
+            });
+
+            const resizeBtn = document.createElement('button');
+            resizeBtn.className = 'plyr__control plyr__control--resize';
+            document.querySelector('.plyr__controls').appendChild(resizeBtn);
+
+            const modes = ['mode-fill', 'mode-contain', 'mode-square'];
+            let mIdx = 0;
+            resizeBtn.onclick = () => {
+                container.classList.remove(...modes);
+                mIdx = (mIdx + 1) % modes.length;
+                container.classList.add(modes[mIdx]);
+            };
+            container.classList.add('mode-fill');
+        });
+
+        window.loadVideo = (url, title) => {
+            player.source = { type: 'video', title: title, sources: [{ src: url }] };
+            document.querySelector('.plyr__title').innerHTML = title + ' 👍';
+            player.play();
+            if (window.Android) Android.onVideoReady();
+        };
+
+        window.loadPlaylist = (json) => {
+            const data = JSON.parse(json);
+            const wrapper = document.querySelector('.playlist-wrapper');
+            wrapper.innerHTML = '';
+            data.forEach(item => {
+                const div = document.createElement('div');
+                div.className = 'playlist-item';
+                div.textContent = item.title;
+                div.onclick = () => window.loadVideo(item.url, item.title);
+                wrapper.appendChild(div);
+            });
+            window.loadVideo(data[0].url, data[0].title);
+        };
+    </script>
+</body>
+</html>
