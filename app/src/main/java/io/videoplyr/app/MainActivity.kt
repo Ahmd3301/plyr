@@ -23,14 +23,15 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        
-        // Fullscreen Setup
+
+        // إعداد الشاشة الكاملة (تغطية النوتش وإخفاء أشرطة النظام)
         WindowCompat.setDecorFitsSystemWindows(window, false)
         WindowInsetsControllerCompat(window, window.decorView).apply {
             hide(WindowInsetsCompat.Type.systemBars())
             systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
         }
 
+        // إنشاء الـ WebView برمجياً
         webView = WebView(this)
         setContentView(webView)
 
@@ -39,11 +40,13 @@ class MainActivity : AppCompatActivity() {
             domStorageEnabled = true
             allowFileAccessFromFileURLs = true
             allowUniversalAccessFromFileURLs = true
-            mediaPlaybackRequiresUserGesture = false
+            mediaPlaybackRequiresUserGesture = false // تشغيل تلقائي
             mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
             cacheMode = WebSettings.LOAD_DEFAULT
             useWideViewPort = true
             loadWithOverviewMode = true
+            // تعيين User Agent حديث لتجنب حظر روابط m3u8
+            userAgentString = "Mozilla/5.0 (Linux; Android 13) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Mobile Safari/537.36"
         }
 
         webView.addJavascriptInterface(AndroidBridge(), "Android")
@@ -90,10 +93,9 @@ class MainActivity : AppCompatActivity() {
     }
 
     override fun onBackPressed() {
+        // إذا كان الفيديو في وضع ملء الشاشة الخاص بالـ WebView
         if (customView != null) {
             (webView.webChromeClient as VideoWebChromeClient).onHideCustomView()
-        } else if (webView.canGoBack()) {
-            webView.goBack()
         } else {
             super.onBackPressed()
         }
