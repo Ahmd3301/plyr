@@ -3,43 +3,145 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>VideoPlyr</title>
+    <title>مشغل الفيديو الاحترافي</title>
+    
+    <!-- هذه الروابط سيتم استبدالها تلقائياً أثناء البناء بأكواد CSS و JS داخلية -->
     <link href="https://cdn.plyr.io/3.4.6/plyr.css" rel="stylesheet">
     <script src="https://cdn.plyr.io/3.4.6/plyr.js"></script>
+
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        :root { --plyr-color-main: rgba(255, 255, 255, 0.4) !important; }
-        body, html { width: 100%; height: 100%; background: #000; overflow: hidden; }
-        .video-player-container { width: 100%; height: 100%; position: relative; }
-        .plyr { width: 100%; height: 100%; position: absolute; background: #000; }
-        .plyr.mode-fill .plyr__video-wrapper video { object-fit: cover; }
-        .plyr.mode-contain .plyr__video-wrapper video { object-fit: contain; }
-        .plyr.mode-square .plyr__video-wrapper video { width: auto; height: 80%; margin: auto; }
-        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --plyr-color-main: rgba(255, 255, 255, 0.4) !important;
+        }
+
+        body, html {
+            width: 100%;
+            height: 100%;
+            background: #000;
+            overflow: hidden;
+            font-family: sans-serif;
+        }
+
+        .video-player-container {
+            width: 100%;
+            height: 100%;
+            position: relative;
+        }
+
+        .plyr {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            background: #000;
+        }
+
+        /* أنماط الأبعاد */
+        .plyr.mode-fill .plyr__video-wrapper video { object-fit: cover; width: 100%; height: 100%; }
+        .plyr.mode-contain .plyr__video-wrapper video { object-fit: contain; width: 100%; height: 100%; }
+        .plyr.mode-square .plyr__video-wrapper { display: flex; align-items: center; justify-content: center; }
+        .plyr.mode-square .plyr__video-wrapper video { width: auto; height: 80%; }
+
+        /* العنوان */
         .plyr__title {
-            position: absolute; bottom: 64px; left: 20px; z-index: 12;
-            font-size: 15px; color: #fff; background: rgba(255, 255, 255, 0.12);
-            border-radius: 4px; padding: 6px 14px; backdrop-filter: blur(4px);
-            opacity: 0; visibility: hidden; transition: all 0.4s;
+            position: absolute;
+            bottom: 70px;
+            left: 20px;
+            z-index: 12;
+            font-size: 15px;
+            color: #fff;
+            background: rgba(255, 255, 255, 0.12);
+            border-radius: 4px;
+            padding: 8px 15px;
+            cursor: pointer;
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(10px);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
         }
-        .plyr--controls-visible .plyr__title { opacity: 1; visibility: visible; }
-        
+
+        .plyr--controls-visible .plyr__title {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+
+        /* قائمة التشغيل */
         .plyr__playlist {
-            position: absolute; left: 20px; right: 20px; bottom: 110px; z-index: 20;
-            opacity: 0; visibility: hidden; transition: all 0.5s;
+            position: absolute;
+            left: 20px;
+            right: 20px;
+            bottom: 120px;
+            z-index: 20;
+            transform: translateY(20px);
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.5s ease;
         }
-        .playlist-open .plyr__playlist { opacity: 1; visibility: visible; }
-        .playlist-wrapper { display: flex; gap: 16px; overflow-x: auto; scrollbar-width: none; }
+
+        .playlist-open .plyr__playlist {
+            transform: translateY(0);
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .playlist-wrapper {
+            display: flex;
+            gap: 12px;
+            overflow-x: auto;
+            padding: 10px 0;
+            scrollbar-width: none;
+        }
+        .playlist-wrapper::-webkit-scrollbar { display: none; }
+
         .playlist-item {
-            flex: 0 0 auto; width: 200px; height: 110px; color: #fff;
-            background: rgba(255, 255, 255, 0.12); border-radius: 4px;
-            display: flex; align-items: center; justify-content: center; cursor: pointer;
+            flex: 0 0 auto;
+            width: 180px;
+            height: 100px;
+            color: #fff;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(10px);
+            cursor: pointer;
+            border: 1px solid rgba(255,255,255,0.1);
+            font-size: 13px;
+            text-align: center;
+            padding: 5px;
         }
-        .playlist-item.active { background: rgba(255, 255, 255, 0.3); }
-        .plyr__control--resize::after { content: '⛶'; font-size: 19px; }
+        .playlist-item.active { 
+            background: rgba(255, 255, 255, 0.25);
+            border-color: #fff;
+        }
+
+        /* زر تغيير الأبعاد */
+        .plyr__control--resize {
+            background: transparent !important;
+            color: #fff !important;
+        }
+        .plyr__control--resize::after { content: '⛶'; font-size: 18px; }
+
+        /* إخفاء اللون الأزرق الافتراضي */
+        .plyr--full-ui input[type=range] { color: #fff !important; }
+        .plyr__control--overlaid { background: rgba(255, 255, 255, 0.2) !important; }
+        .plyr__menu__container {
+            background: rgba(0, 0, 0, 0.8) !important;
+            backdrop-filter: blur(10px);
+            border: none !important;
+        }
     </style>
 </head>
 <body>
+
     <div class="video-player-container">
         <video id="player" playsinline controls autoplay poster="https://cdn.plyr.io/static/demo/View_From_A_Blue_Moon_Trailer-HD.jpg">
             <source src="https://cdn.plyr.io/static/demo/View_From_A_Blue_Moon_Trailer-720p.mp4" type="video/mp4">
@@ -48,69 +150,104 @@
 
     <script>
         let player;
+
         document.addEventListener('DOMContentLoaded', () => {
+            // تهيئة المشغل
             player = new Plyr('#player', {
                 controls: ['play', 'progress', 'current-time', 'mute', 'volume', 'captions', 'settings', 'fullscreen'],
-                settings: ['quality', 'speed']
+                settings: ['quality', 'speed'],
+                keyboard: { focused: true, global: true },
+                tooltips: { controls: false, seek: true }
             });
 
             const container = document.querySelector('.plyr');
-            const titleBox = document.createElement('div');
-            titleBox.className = 'plyr__title';
-            titleBox.innerHTML = 'Video player plyr.io 👍';
-            container.appendChild(titleBox);
 
-            const playlist = document.createElement('div');
-            playlist.className = 'plyr__playlist';
-            playlist.innerHTML = `<div class="playlist-wrapper">
-                <div class="playlist-item active" data-src="https://cdn.plyr.io/static/demo/View_From_A_Blue_Moon_Trailer-720p.mp4">Video #01</div>
-                <div class="playlist-item" data-src="https://cdn.plyr.io/static/demo/View_From_A_Blue_Moon_Trailer-1080p.mp4">Video #02</div>
-            </div>`;
-            container.appendChild(playlist);
+            // إنشاء العنوان
+            const titleElement = document.createElement('div');
+            titleElement.className = 'plyr__title';
+            titleElement.innerHTML = 'Video player plyr.io <span>👍</span>';
+            container.appendChild(titleElement);
 
-            titleBox.onclick = () => container.classList.toggle('playlist-open');
+            // إنشاء قائمة التشغيل
+            const playlistElement = document.createElement('div');
+            playlistElement.className = 'plyr__playlist';
+            playlistElement.innerHTML = `
+                <div class="playlist-wrapper">
+                    <div class="playlist-item active" data-src="https://cdn.plyr.io/static/demo/View_From_A_Blue_Moon_Trailer-720p.mp4">Video #01</div>
+                    <div class="playlist-item" data-src="https://cdn.plyr.io/static/demo/View_From_A_Blue_Moon_Trailer-1080p.mp4">Video #02</div>
+                </div>
+            `;
+            container.appendChild(playlistElement);
 
+            // فتح وإغلاق القائمة عند الضغط على العنوان
+            titleElement.onclick = (e) => {
+                e.stopPropagation();
+                container.classList.toggle('playlist-open');
+            };
+
+            // تشغيل الفيديو من القائمة
             document.querySelectorAll('.playlist-item').forEach(item => {
                 item.onclick = () => {
-                    window.loadVideo(item.dataset.src, item.textContent);
+                    const src = item.getAttribute('data-src');
+                    const title = item.textContent;
+                    window.loadVideo(src, title);
+                    
                     document.querySelectorAll('.playlist-item').forEach(i => i.classList.remove('active'));
                     item.classList.add('active');
+                    container.classList.remove('playlist-open');
                 };
             });
 
+            // إضافة زر تغيير الأبعاد
+            const controls = document.querySelector('.plyr__controls');
             const resizeBtn = document.createElement('button');
+            resizeBtn.type = 'button';
             resizeBtn.className = 'plyr__control plyr__control--resize';
-            document.querySelector('.plyr__controls').appendChild(resizeBtn);
+            controls.appendChild(resizeBtn);
 
             const modes = ['mode-fill', 'mode-contain', 'mode-square'];
-            let mIdx = 0;
+            let currentMode = 0;
             resizeBtn.onclick = () => {
                 container.classList.remove(...modes);
-                mIdx = (mIdx + 1) % modes.length;
-                container.classList.add(modes[mIdx]);
+                currentMode = (currentMode + 1) % modes.length;
+                container.classList.add(modes[currentMode]);
             };
             container.classList.add('mode-fill');
+
+            // إخفاء القائمة تلقائياً عند إخفاء عناصر التحكم
+            player.on('controlshidden', () => {
+                container.classList.remove('playlist-open');
+            });
         });
 
+        // دوال للتحكم من طرف أندرويد (Deep Links)
         window.loadVideo = (url, title) => {
-            player.source = { type: 'video', title: title, sources: [{ src: url }] };
-            document.querySelector('.plyr__title').innerHTML = title + ' 👍';
+            player.source = {
+                type: 'video',
+                title: title,
+                sources: [{ src: url, type: url.includes('.m3u') ? 'application/x-mpegURL' : 'video/mp4' }]
+            };
+            document.querySelector('.plyr__title').innerHTML = title + ' <span>👍</span>';
             player.play();
             if (window.Android) Android.onVideoReady();
         };
 
-        window.loadPlaylist = (json) => {
-            const data = JSON.parse(json);
-            const wrapper = document.querySelector('.playlist-wrapper');
-            wrapper.innerHTML = '';
-            data.forEach(item => {
-                const div = document.createElement('div');
-                div.className = 'playlist-item';
-                div.textContent = item.title;
-                div.onclick = () => window.loadVideo(item.url, item.title);
-                wrapper.appendChild(div);
-            });
-            window.loadVideo(data[0].url, data[0].title);
+        window.loadPlaylist = (jsonString) => {
+            try {
+                const items = JSON.parse(jsonString);
+                const wrapper = document.querySelector('.playlist-wrapper');
+                wrapper.innerHTML = '';
+                items.forEach((item, index) => {
+                    const div = document.createElement('div');
+                    div.className = 'playlist-item' + (index === 0 ? ' active' : '');
+                    div.textContent = item.title;
+                    div.onclick = () => window.loadVideo(item.url, item.title);
+                    wrapper.appendChild(div);
+                });
+                window.loadVideo(items[0].url, items[0].title);
+            } catch(e) {
+                if (window.Android) Android.onError(e.message);
+            }
         };
     </script>
 </body>
