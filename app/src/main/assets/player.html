@@ -4,171 +4,107 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>مشغل الفيديو الاحترافي</title>
-    
-    <!-- هذه الروابط سيتم استبدالها تلقائياً أثناء البناء بأكواد CSS و JS داخلية -->
+    <!-- العلامات التالية سيتم استبدالها تلقائياً أثناء البناء -->
     <link href="https://cdn.plyr.io/3.4.6/plyr.css" rel="stylesheet">
     <script src="https://cdn.plyr.io/3.4.6/plyr.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
 
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root { --plyr-color-main: rgba(255, 255, 255, 0.4) !important; }
+        .plyr--full-ui input[type=range] { color: #fff !important; }
+        .plyr__control--overlaid { background: rgba(255, 255, 255, 0.15) !important; }
+        .plyr--video .plyr__control.plyr__tab-focus, 
+        .plyr--video .plyr__control:hover, 
+        .plyr--video .plyr__control[aria-expanded=true] {
+            background: rgba(255, 255, 255, 0.2) !important; color: #fff !important;
         }
-
-        :root {
-            --plyr-color-main: rgba(255, 255, 255, 0.4) !important;
+        .plyr__menu__container {
+            background: rgba(255, 255, 255, 0.12) !important;
+            backdrop-filter: blur(15px) !important; -webkit-backdrop-filter: blur(15px) !important;
+            border: none !important; color: #fff !important;
         }
+        .plyr__menu__container .plyr__control { color: #fff !important; }
+        .plyr__menu__container [role="menuitemradio"][aria-checked="true"]::before { background: #fff !important; }
 
         body, html {
-            width: 100%;
-            height: 100%;
-            background: #000;
-            overflow: hidden;
-            font-family: sans-serif;
+            width: 100%; height: 100%; background: #000; overflow: hidden;
+            padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
         }
-
-        .video-player-container {
-            width: 100%;
-            height: 100%;
-            position: relative;
-        }
-
-        .plyr {
-            width: 100%;
-            height: 100%;
-            position: absolute;
-            background: #000;
-        }
-
-        /* أنماط الأبعاد */
+        .video-player-container { width: 100%; height: 100%; position: relative; }
+        .plyr { width: 100%; height: 100%; position: absolute; background: #000; }
+        .plyr__video-wrapper { transition: all 0.3s ease; }
         .plyr.mode-fill .plyr__video-wrapper video { object-fit: cover; width: 100%; height: 100%; }
         .plyr.mode-contain .plyr__video-wrapper video { object-fit: contain; width: 100%; height: 100%; }
         .plyr.mode-square .plyr__video-wrapper { display: flex; align-items: center; justify-content: center; }
         .plyr.mode-square .plyr__video-wrapper video { width: auto; height: 80%; }
 
-        /* العنوان */
         .plyr__title {
-            position: absolute;
-            bottom: 70px;
-            left: 20px;
-            z-index: 12;
-            font-size: 15px;
-            color: #fff;
-            background: rgba(255, 255, 255, 0.12);
-            border-radius: 4px;
-            padding: 8px 15px;
-            cursor: pointer;
-            backdrop-filter: blur(8px);
-            -webkit-backdrop-filter: blur(8px);
-            opacity: 0;
-            visibility: hidden;
-            transform: translateY(10px);
+            position: absolute; bottom: calc(48px + 16px); left: 20px; z-index: 12;
+            font-size: 15px !important; color: #fff !important;
+            background: rgba(255, 255, 255, 0.12) !important; border-radius: 4px !important;
+            padding: 6px 14px !important; height: 34px !important; line-height: 22px !important;
+            cursor: pointer; display: inline-flex; align-items: center; gap: 6px;
+            opacity: 0; visibility: hidden; transform: translateY(10px);
             transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
         }
+        .plyr--controls-visible .plyr__title { opacity: 1 !important; visibility: visible !important; transform: translateY(0); }
 
-        .plyr--controls-visible .plyr__title {
-            opacity: 1;
-            visibility: visible;
-            transform: translateY(0);
-        }
-
-        /* قائمة التشغيل */
         .plyr__playlist {
-            position: absolute;
-            left: 20px;
-            right: 20px;
-            bottom: 120px;
-            z-index: 20;
-            transform: translateY(20px);
-            opacity: 0;
-            visibility: hidden;
-            transition: all 0.5s ease;
+            position: absolute; left: 20px; right: 20px; bottom: calc(48px + 16px + 34px + 16px);
+            z-index: 20; transform: translateY(20px) scale(0.98);
+            opacity: 0; visibility: hidden; transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            overflow: hidden; pointer-events: none;
         }
-
-        .playlist-open .plyr__playlist {
-            transform: translateY(0);
-            opacity: 1;
-            visibility: visible;
-        }
-
-        .playlist-wrapper {
-            display: flex;
-            gap: 12px;
-            overflow-x: auto;
-            padding: 10px 0;
-            scrollbar-width: none;
-        }
+        .plyr--controls-visible.playlist-open .plyr__playlist { opacity: 1; visibility: visible; transform: translateY(0) scale(1); pointer-events: auto; }
+        .playlist-wrapper { display: flex; gap: 16px; overflow-x: auto; scrollbar-width: none; }
         .playlist-wrapper::-webkit-scrollbar { display: none; }
-
         .playlist-item {
-            flex: 0 0 auto;
-            width: 180px;
-            height: 100px;
-            color: #fff;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            backdrop-filter: blur(10px);
-            cursor: pointer;
-            border: 1px solid rgba(255,255,255,0.1);
-            font-size: 13px;
-            text-align: center;
-            padding: 5px;
+            flex: 0 0 auto; width: 240px; height: 135px; color: #fff !important;
+            background: rgba(255, 255, 255, 0.12) !important; border-radius: 4px !important;
+            display: inline-flex; align-items: center; justify-content: center;
+            backdrop-filter: blur(4px); cursor: pointer;
         }
-        .playlist-item.active { 
-            background: rgba(255, 255, 255, 0.25);
-            border-color: #fff;
-        }
-
-        /* زر تغيير الأبعاد */
+        .playlist-item.active { background: rgba(255, 255, 255, 0.25) !important; }
+        .plyr__controls { background: transparent !important; padding: 0 20px 10px !important; z-index: 10; }
         .plyr__control--resize {
-            background: transparent !important;
-            color: #fff !important;
+            background: transparent !important; color: #fff !important;
+            width: 32px; height: 32px; display: inline-flex !important; align-items: center; justify-content: center;
         }
-        .plyr__control--resize::after { content: '⛶'; font-size: 18px; }
-
-        /* إخفاء اللون الأزرق الافتراضي */
-        .plyr--full-ui input[type=range] { color: #fff !important; }
-        .plyr__control--overlaid { background: rgba(255, 255, 255, 0.2) !important; }
-        .plyr__menu__container {
-            background: rgba(0, 0, 0, 0.8) !important;
-            backdrop-filter: blur(10px);
-            border: none !important;
-        }
+        .plyr__control--resize::after { content: '⛶'; font-weight: 900; font-size: 19px; }
     </style>
 </head>
 <body>
-
     <div class="video-player-container">
-        <video id="player" playsinline controls autoplay poster="https://cdn.plyr.io/static/demo/View_From_A_Blue_Moon_Trailer-HD.jpg">
-            <source src="https://cdn.plyr.io/static/demo/View_From_A_Blue_Moon_Trailer-720p.mp4" type="video/mp4">
-        </video>
+        <video id="player" controls crossorigin playsinline poster="https://cdn.plyr.io/static/demo/View_From_A_Blue_Moon_Trailer-HD.jpg"></video>
     </div>
 
     <script>
         let player;
+        let hls;
 
         document.addEventListener('DOMContentLoaded', () => {
-            // تهيئة المشغل
-            player = new Plyr('#player', {
-                controls: ['play', 'progress', 'current-time', 'mute', 'volume', 'captions', 'settings', 'fullscreen'],
-                settings: ['quality', 'speed'],
-                keyboard: { focused: true, global: true },
-                tooltips: { controls: false, seek: true }
+            const video = document.getElementById('player');
+            
+            // ✅ تهيئة Plyr مع 13 زر كاملة
+            player = new Plyr(video, {
+                controls: ['rewind', 'play', 'fast-forward', 'progress', 'current-time', 'mute', 'volume', 'captions', 'settings', 'pip', 'airplay', 'fullscreen'],
+                seekTime: 10,
+                settings: ['quality', 'speed', 'captions'],
+                fullscreen: { iosNative: false, container: '.plyr' },
+                hideControls: true,
+                clickToPlay: false
             });
 
-            const container = document.querySelector('.plyr');
+            const playerContainer = document.querySelector('.plyr');
 
-            // إنشاء العنوان
+            // ✅ إضافة العنوان والـ Playlist بنفس الـ UI المطلوب
             const titleElement = document.createElement('div');
             titleElement.className = 'plyr__title';
             titleElement.innerHTML = 'Video player plyr.io <span>👍</span>';
-            container.appendChild(titleElement);
+            playerContainer.appendChild(titleElement);
 
-            // إنشاء قائمة التشغيل
             const playlistElement = document.createElement('div');
             playlistElement.className = 'plyr__playlist';
             playlistElement.innerHTML = `
@@ -177,78 +113,58 @@
                     <div class="playlist-item" data-src="https://cdn.plyr.io/static/demo/View_From_A_Blue_Moon_Trailer-1080p.mp4">Video #02</div>
                 </div>
             `;
-            container.appendChild(playlistElement);
+            playerContainer.appendChild(playlistElement);
 
-            // فتح وإغلاق القائمة عند الضغط على العنوان
-            titleElement.onclick = (e) => {
-                e.stopPropagation();
-                container.classList.toggle('playlist-open');
-            };
-
-            // تشغيل الفيديو من القائمة
-            document.querySelectorAll('.playlist-item').forEach(item => {
-                item.onclick = () => {
-                    const src = item.getAttribute('data-src');
-                    const title = item.textContent;
-                    window.loadVideo(src, title);
-                    
-                    document.querySelectorAll('.playlist-item').forEach(i => i.classList.remove('active'));
-                    item.classList.add('active');
-                    container.classList.remove('playlist-open');
-                };
+            // المزامنة
+            player.on('controlsshown', () => playerContainer.classList.add('plyr--controls-visible'));
+            player.on('controlshidden', () => {
+                playerContainer.classList.remove('plyr--controls-visible', 'playlist-open');
             });
 
-            // إضافة زر تغيير الأبعاد
-            const controls = document.querySelector('.plyr__controls');
+            titleElement.addEventListener('click', (e) => {
+                e.stopPropagation();
+                playerContainer.classList.toggle('playlist-open');
+            });
+
+            // زر الأبعاد
+            const controlsBar = document.querySelector('.plyr__controls');
             const resizeBtn = document.createElement('button');
-            resizeBtn.type = 'button';
             resizeBtn.className = 'plyr__control plyr__control--resize';
-            controls.appendChild(resizeBtn);
+            controlsBar.insertBefore(resizeBtn, controlsBar.lastChild);
 
             const modes = ['mode-fill', 'mode-contain', 'mode-square'];
             let currentMode = 0;
             resizeBtn.onclick = () => {
-                container.classList.remove(...modes);
+                playerContainer.classList.remove(...modes);
                 currentMode = (currentMode + 1) % modes.length;
-                container.classList.add(modes[currentMode]);
+                playerContainer.classList.add(modes[currentMode]);
             };
-            container.classList.add('mode-fill');
+            playerContainer.classList.add('mode-fill');
 
-            // إخفاء القائمة تلقائياً عند إخفاء عناصر التحكم
-            player.on('controlshidden', () => {
-                container.classList.remove('playlist-open');
-            });
+            // وظيفة تشغيل الفيديوهات
+            window.loadVideo = (url, title) => {
+                if (hls) { hls.destroy(); }
+                
+                if (url.includes('.m3u8')) {
+                    if (Hls.isSupported()) {
+                        hls = new Hls();
+                        hls.loadSource(url);
+                        hls.attachMedia(video);
+                    } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+                        video.src = url;
+                    }
+                } else {
+                    video.src = url;
+                }
+                
+                titleElement.innerHTML = title + ' <span>👍</span>';
+                video.play();
+                if (window.Android) Android.onVideoReady();
+            };
+
+            // تشغيل الديمو عند البدء
+            window.loadVideo('https://cdn.plyr.io/static/demo/View_From_A_Blue_Moon_Trailer-720p.mp4', 'Video player plyr.io');
         });
-
-        // دوال للتحكم من طرف أندرويد (Deep Links)
-        window.loadVideo = (url, title) => {
-            player.source = {
-                type: 'video',
-                title: title,
-                sources: [{ src: url, type: url.includes('.m3u') ? 'application/x-mpegURL' : 'video/mp4' }]
-            };
-            document.querySelector('.plyr__title').innerHTML = title + ' <span>👍</span>';
-            player.play();
-            if (window.Android) Android.onVideoReady();
-        };
-
-        window.loadPlaylist = (jsonString) => {
-            try {
-                const items = JSON.parse(jsonString);
-                const wrapper = document.querySelector('.playlist-wrapper');
-                wrapper.innerHTML = '';
-                items.forEach((item, index) => {
-                    const div = document.createElement('div');
-                    div.className = 'playlist-item' + (index === 0 ? ' active' : '');
-                    div.textContent = item.title;
-                    div.onclick = () => window.loadVideo(item.url, item.title);
-                    wrapper.appendChild(div);
-                });
-                window.loadVideo(items[0].url, items[0].title);
-            } catch(e) {
-                if (window.Android) Android.onError(e.message);
-            }
-        };
     </script>
 </body>
 </html>
